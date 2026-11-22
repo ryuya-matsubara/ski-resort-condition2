@@ -6,7 +6,8 @@ export const qualities = {
 } as const
 export type Quality = keyof typeof qualities
 export interface Day {date:string; quality:Quality; reason:string; snow:number|null; depth:number|null; low:number|null; high:number|null; weather:number|null}
-export interface Forecast { updated:number; days:Day[] }
+export const forecastRulesVersion = 2
+export interface Forecast { updated:number; days:Day[]; rulesVersion?:number }
 export interface Hourly {time:string[]; temperature_2m:(number|null)[]; snowfall:(number|null)[]; rain:(number|null)[]; showers?:(number|null)[]; wind_speed_10m:(number|null)[]; snow_depth?:(number|null)[]; weather_code?:(number|null)[]}
 export const nameOf=(r:Resort)=>r.name || ('名称未登録（'+r.prefectures.join('・')+'）')
 export function dateInJapan(now=Date.now(), offset=0){return new Date(now+9*3600000+offset*86400000).toISOString().slice(0,10)}
@@ -24,6 +25,27 @@ export function weatherLabel(n:number|null){
 }
 const finite=(n:unknown):n is number=>typeof n==='number'&&Number.isFinite(n)
 const numberAt=(arr:(number|null)[]|undefined,i:number)=>finite(arr?.[i])?arr![i] as number:null
+
+function retainedPowder(hourly:Hourly, morning:number, nightStart:number){
+  const snowfallByDate = new Map<string, number>()
+  const firstHour = Math.max(0, morning - 71)
+  // Walk backward from the morning. Snow before a thaw, rain or a data gap cannot qualify.
+  for(let hour = morning; hour >= firstHour; hour--){
+    const temperature = numberAt(hourly.temperature_2m, hour)
+    const snowfall = numberAt(hourly.snowfall, hour)
+    const rain = numberAt(hourly.rain, hour)
+    const showers = numberAt(hourly.showers, hour)
+    if(temperature === null || snowfall === null || rain === null || showers === null) break
+    if(temperature > 0 || rain > 0 || showers > 0 || (snowfall > 0 && temperature > -1)) break
+    if(hour >= nightStart || snowfall <= 0) continue
+    const date = hourly.time[hour].slice(0, 10)
+    snowfallByDate.set(date, (snowfallByDate.get(date) ?? 0) + snowfall)
+  }
+  for(const [date, snowfall] of snowfallByDate){
+    if(snowfall >= 30) return {date, snowfall}
+  }
+}
+
 export function summarize(h:Hourly,date:string):Day{
   const end=h.time.indexOf(date+'T09:00')
   const start=h.time.indexOf(date+'T00:00')
@@ -69,6 +91,13 @@ export function summarize(h:Hourly,date:string):Day{
   }
   if(wetSnow>=10&&surface!=='wet')return result('unknown','湿った新雪が多く、朝の硬さを特定できません。')
   if(surface==='wet')return result('slush','雨または暖かい時間が続き、朝は雪面が緩む予想です。')
+  const retained = retainedPowder(h, end, nightStart)
+  if(retained){
+    const daysAgo = (Date.parse(date) - Date.parse(retained.date)) / 86400000
+    const label = daysAgo === 1 ? '前日' : daysAgo + '日前'
+    const sourceDate = dayLabel(retained.date, {month:'numeric',day:'numeric'})
+    return result('powder',label+'（'+sourceDate+'）に乾いた雪が約'+Math.round(retained.snowfall)+' cm降り、その後も雨がなく0℃以下が続くため、未圧雪部分に雪が残る見込みです。')
+  }
   if(surface==='frozen')return result('ice','一度濡れた雪面が冷え込み、上に積もった乾いた新雪も少ない予想です。')
   return result('packed','新雪は少なく、融解・再凍結の兆候も弱い予想です。整備コースを想定しています。')
 }
