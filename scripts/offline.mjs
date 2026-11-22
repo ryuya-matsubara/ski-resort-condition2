@@ -1,4 +1,4 @@
-import { readdir, readFile, writeFile } from 'node:fs/promises'
+import { cp, copyFile, readdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 async function list(dir) {
@@ -6,6 +6,12 @@ async function list(dir) {
   const groups = await Promise.all(entries.map(e => e.isDirectory() ? list(path.join(dir,e.name)) : path.join(dir,e.name)))
   return groups.flat()
 }
+// GitHub Pages publishes main at its root. Keep the deployable files and the portable dist identical.
+for (const entry of ['index.html','manifest.webmanifest','data','icons','.nojekyll']) {
+  await cp(entry, path.join('dist',entry), {recursive:true})
+}
+await rename('dist/assets/main.css','dist/assets/app.css')
+await cp('dist/assets','assets',{recursive:true})
 const files = (await list('dist')).filter(f=> !f.endsWith('sw.js') && !path.basename(f).startsWith('.')).sort()
 const hash = createHash('sha256')
 for(const f of files) hash.update(await readFile(f))
@@ -16,7 +22,7 @@ const scope = self.registration.scope;
 const prefix = 'yukimiru:' + scope + ':';
 const cacheName = prefix + ${JSON.stringify(version)};
 const urls = ${JSON.stringify(urls)}.map(p=>new URL(p,scope).href);
-self.addEventListener('install',event=>event.waitUntil(caches.open(cacheName).then(cache=>cache.addAll(urls)).then(()=>self.skipWaiting())));
+self.addEventListener('install',event=>event.waitUntil(caches.open(cacheName).then(cache=>cache.addAll(urls.map(url=>new Request(url,{cache:'reload'})))).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith(prefix)&&k!==cacheName).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
   const req=event.request;
@@ -26,3 +32,4 @@ self.addEventListener('fetch',event=>{
   event.respondWith(caches.open(cacheName).then(async cache=>(await cache.match(key))||fetch(req)));
 });`
 await writeFile('dist/sw.js',worker)
+await copyFile('dist/sw.js','sw.js')

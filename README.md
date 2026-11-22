@@ -20,7 +20,7 @@ npm run build
 npm run preview
 ```
 
-本番ビルドでは `dist/` に静的ファイルと、ファイル内容に応じて更新されるService Workerを生成します。GitHub Pagesの公開元は `gh-pages` ブランチのルートです。再公開はテスト・ビルド後に `npx gh-pages@6.3.0 -d dist --dotfiles` を実行します。公開に使うGitHubアカウントには対象リポジトリの書き込み権限が必要です。
+本番ビルドでは `dist/` に静的ファイルと、ファイル内容に応じて更新されるService Workerを生成します。GitHub Pagesの公開元は `main` ブランチのルートです。再公開するときはテストとビルドを実行し、生成された `assets/` と `sw.js` をソース変更と一緒にコミットして `main` に反映します。公開に使うGitHubアカウントには対象リポジトリの書き込み権限が必要です。
 
 ## データと判定
 
@@ -29,4 +29,4 @@ npm run preview
 - Open-Meteoに各地点の緯度・経度・標高を指定し、日本時間で過去2日間と予報8日間の時間別データを取得します。登録済み地点だけをまとめて取得し、直近の予報を端末で再利用します。
 - 朝までの48時間を時系列でたどり、雨・暖気による湿潤と再凍結を推定します。前日16時から当日9時までの乾いた新雪10 cm以上をパウダー、30 cm以上かつ低温・強風条件を満たす場合を極上パウダーとします。数値は初期の経験則です。現地の圧雪作業、斜面方位、体感によって違いが生じます。必要データに欠測がある場合は判定を保留します。
 
-ゲレンデデータは [OpenSkiData / OpenSkiMap.org](https://www.openskidata.org/)、© [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)、Skimap.org、Who's On First、© Mapterhorn に基づきます。加工した [resorts.jp.json](public/data/resorts.jp.json) を [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) で提供します。予報は [Open-Meteo](https://open-meteo.com/)（[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)）、オンラインの背景地図は[地理院タイル](https://maps.gsi.go.jp/development/ichiran.html)、海岸線は [Natural Earth](https://www.naturalearthdata.com/) を使用しています。
+ゲレンデデータは [OpenSkiData / OpenSkiMap.org](https://www.openskidata.org/)、© [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)、Skimap.org、Who's On First、© Mapterhorn に基づきます。加工した [resorts.jp.json](data/resorts.jp.json) を [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) で提供します。予報は [Open-Meteo](https://open-meteo.com/)（[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)）、オンラインの背景地図は[地理院タイル](https://maps.gsi.go.jp/development/ichiran.html)、海岸線は [Natural Earth](https://www.naturalearthdata.com/) を使用しています。
