@@ -22,7 +22,7 @@ export function Picker({catalog,ids,onAdd,onClose,initial=''}:{catalog:Resort[];
   return ()=>{live=false;clearTimeout(timeout);ac.abort()}
  },[chosen])
  const valid=chosen&&name.trim()&&alt.trim()&&Number.isFinite(Number(alt))&&Number(alt)>=-20&&Number(alt)<=3776
- return <Dialog title={custom?'地図から登録':'ゲレンデを追加'} onClose={onClose}>{custom?<div className="custom">
+ return <Dialog title={custom?'手動登録':'ゲレンデを追加'} onClose={onClose}>{custom?<div className="custom">
   <p className="muted">地図を拡大して、いつも滑る斜面をタップしてください。</p>
   <ResortMap resorts={[]} chosen={chosen} onPick={(lat,lon)=>{if(lat<24||lat>46.5||lon<122||lon>150){setAltHint('日本国内の地点を選んでください。');return}setChosen([lat,lon])}}/>
   <label>ゲレンデ名<input value={name} maxLength={80} onChange={e=>setName(e.target.value)} placeholder="例：いつもの北斜面"/></label>
@@ -31,7 +31,7 @@ export function Picker({catalog,ids,onAdd,onClose,initial=''}:{catalog:Resort[];
   <button className="text-button" onClick={()=>setCustom(false)}>候補の検索に戻る</button>
  </div>:<>
   <label className="searchbox"><Icon name="search"/><input autoFocus value={query} onChange={e=>{setQuery(e.target.value);setLimit(35)}} placeholder="スキー場名・都道府県で検索" aria-label="スキー場名・都道府県で検索"/></label>
-  <div className="picker-meta"><span>{matches.length} 件の候補</span><button className="text-button" onClick={()=>setCustom(true)}><Icon name="pin" size={15}/>地図から登録</button></div>
+  <div className="picker-meta"><span>{matches.length} 件の候補</span><button className="text-button" onClick={()=>setCustom(true)}><Icon name="pin" size={15}/>手動登録</button></div>
   <div className="results">{matches.slice(0,limit).map(r=><button className="result" key={r.id} onClick={()=>{onAdd(r);onClose()}} disabled={ids.includes(r.id)}><span><b>{nameOf(r)}</b><small>{r.prefectures.join('・')}　標高 {Math.round(r.forecastPoint.elevationM).toLocaleString()} m</small></span><span className="circle"><Icon name={ids.includes(r.id)?'check':'plus'}/></span></button>)}
   {!matches.length&&<p>一致するゲレンデがありません。</p>}{matches.length>limit&&<button className="more" onClick={()=>setLimit(limit+50)}>さらに表示</button>}</div>
  </>}</Dialog>
